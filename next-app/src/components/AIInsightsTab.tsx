@@ -65,7 +65,8 @@ async function callAI(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'gpt-4o',
-        max_tokens: 8192,
+        max_tokens: 16000,
+        response_format: { type: 'json_object' },
         messages: [{ role: 'system', content: systemPrompt }, ...messages],
       }),
     });
@@ -182,9 +183,9 @@ ANALYSIS STANDARDS: Write like a senior analyst at a real estate private equity 
 
 CRITICAL: Output ONLY a raw JSON object. No markdown, no backticks, no text outside the JSON.
 
-{"portfolioSummary":{"overallGrade":"A/B/C/D/F","stressResilience":"X of Y properties survive the perfect storm","strategicRecommendation":"4-5 sentence portfolio-level recommendation referencing concentration risk, stress performance distribution, yield range, and the single highest-priority action the investor should take now"},"topPick":{"name":"exact address from data","city":"city, ST","netYield":"X.X%","executiveSummary":"5-6 sentences: open with the yield headline and cap rate context, explain stress resilience citing the actual worst-case monthly CF number, quantify the 5-year exit upside with the projected net proceeds, and close with why this fits this specific investor profile","whyBest":"2-3 sentences comparing this property to the next-best alternative with specific numbers","watchOuts":["specific risk with mitigation","second risk","third risk if material"],"nextSteps":["concrete step the investor can take in the next 7 days","step 2","step 3"]},"marketAlerts":[{"title":"alert title","body":"4-5 sentences with specific data points","affectedProperties":["exact addresses from data"],"action":"One specific action in the next 30 days","impactLevel":"High/Medium/Low","type":"opportunity/warning/info"}],"rankings":[{"name":"exact address","city":"city, ST","netYield":"X.X%","action":"Buy/Hold/Watch/Pass","risk":"Low/Medium/High","thesis":"4-5 sentences with specific numbers","stressSurvival":"Survives/Fails perfect storm","stressDetail":"2 sentences describing worst-case CF and biggest stress vulnerability","exitInsight":"2 sentences with yr-5 net proceeds and timing risk","momentumAnalysis":"2 sentences on location trajectory and primary risk","keyRisks":["quantified risk with a number","second specific risk"],"signals":["data-backed signal with a number","signal 2","signal 3"]}]}
+{"portfolioSummary":{"overallGrade":"A/B/C/D/F","stressResilience":"X of Y properties survive the perfect storm","strategicRecommendation":"3 sentences: concentration risk, stress distribution, and the single highest-priority action now"},"topPick":{"name":"exact address from data","city":"city, ST","netYield":"X.X%","executiveSummary":"3-4 sentences: yield headline, stress worst-case CF number, 5-year net sale proceeds, fit for this investor profile","whyBest":"2 sentences comparing to next-best alternative with specific numbers","watchOuts":["specific risk with number","second risk"],"nextSteps":["concrete step within 7 days","step 2"]},"marketAlerts":[{"title":"alert title","body":"2-3 sentences with specific data points","affectedProperties":["exact addresses from data"],"action":"One specific action in the next 30 days","impactLevel":"High/Medium/Low","type":"opportunity/warning/info"}],"rankings":[{"name":"exact address","city":"city, ST","netYield":"X.X%","action":"Buy/Hold/Watch/Pass","risk":"Low/Medium/High","thesis":"2-3 sentences with specific numbers","stressSurvival":"Survives/Fails perfect storm","stressDetail":"1-2 sentences: worst-case CF and biggest vulnerability","exitInsight":"1 sentence with yr-5 net proceeds","momentumAnalysis":"1 sentence on location trajectory","keyRisks":["quantified risk","second risk"],"signals":["data-backed signal","signal 2"]}]}
 
-Rank all properties (max 8). Include exactly 4 market alerts. Every text field must contain substantive analysis with specific numbers.`;
+Rank all properties (max 6). Include exactly 3 market alerts. Every text field must cite a specific number from the data.`;
 
     const text = await callAI(
       [{ role: 'user', content: `Analyze these ${listings.length} qualifying investment properties:\n\n${context}` }],
