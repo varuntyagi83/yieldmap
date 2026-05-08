@@ -468,6 +468,38 @@ ${rankingsBlock}
     setTimeout(() => win.print(), 400);
   };
 
+  const renderMarkdown = (text) => {
+    const lines = text.split('\n');
+    const out = [];
+    let listItems = [];
+    let listType = null;
+
+    const flushList = () => {
+      if (!listItems.length) return;
+      const Tag = listType === 'ol' ? 'ol' : 'ul';
+      out.push(<Tag key={out.length} style={{ paddingLeft: 18, margin: '6px 0' }}>{listItems.map((li, i) => <li key={i} style={{ marginBottom: 3 }} dangerouslySetInnerHTML={{ __html: li }} />)}</Tag>);
+      listItems = [];
+      listType = null;
+    };
+
+    const inline = (s) => s
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`(.+?)`/g, '<code style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:3px;font-size:11px">$1</code>');
+
+    lines.forEach((line, i) => {
+      const olMatch = line.match(/^(\d+)\.\s+(.*)/);
+      const ulMatch = line.match(/^[-*]\s+(.*)/);
+      if (olMatch) { if (listType !== 'ol') { flushList(); listType = 'ol'; } listItems.push(inline(olMatch[2])); return; }
+      if (ulMatch) { if (listType !== 'ul') { flushList(); listType = 'ul'; } listItems.push(inline(ulMatch[1])); return; }
+      flushList();
+      if (line.trim() === '') { out.push(<div key={i} style={{ height: 6 }} />); return; }
+      out.push(<div key={i} style={{ marginBottom: 2 }} dangerouslySetInnerHTML={{ __html: inline(line) }} />);
+    });
+    flushList();
+    return out;
+  };
+
   // Chatbot send
   const sendChat = async () => {
     if (!chatInput.trim() || chatLoading) return;
@@ -1986,9 +2018,9 @@ INSTRUCTIONS:
                   background: m.role === 'user' ? s.chatUser : s.chatBot,
                   color: m.role === 'user' ? s.chatUserTxt : s.txt,
                   border: m.role === 'user' ? 'none' : `1px solid ${s.border}`,
-                  fontSize: 12, lineHeight: 1.55, whiteSpace: 'pre-wrap',
+                  fontSize: 12, lineHeight: 1.6,
                 }}>
-                  {m.text}
+                  {m.role === 'user' ? m.text : renderMarkdown(m.text)}
                 </div>
               </div>
             ))}
