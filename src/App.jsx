@@ -335,6 +335,137 @@ Rank exactly 8 properties. Include exactly 4 market alerts. Every text field mus
     setInsightsLoading(false);
   };
 
+  const downloadInsightsPDF = () => {
+    if (!insightsData || insightsData.error) return;
+    const d = insightsData;
+    const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    const section = (title, content) => `
+      <div class="section">
+        <div class="section-title">${title}</div>
+        ${content}
+      </div>`;
+
+    const alertTypeLabel = t => t === 'warning' ? '⚠' : t === 'opportunity' ? '💡' : 'ℹ';
+    const survives = s => s && s.toLowerCase().includes('surviv');
+
+    const portfolioBlock = d.portfolioSummary ? section('Portfolio Health', `
+      <div class="grade-row">
+        <span class="grade">${d.portfolioSummary.overallGrade}</span>
+        <span class="grade-sub">${d.portfolioSummary.stressResilience}</span>
+      </div>
+      <p>${d.portfolioSummary.strategicRecommendation}</p>
+    `) : '';
+
+    const topPickBlock = d.topPick ? section('Top Pick: ' + d.topPick.name, `
+      <div class="meta">${d.topPick.city} &bull; ${d.topPick.netYield} net yield</div>
+      <p>${d.topPick.executiveSummary}</p>
+      ${d.topPick.whyBest ? `<div class="sub-label">Why this beats the alternatives</div><p>${d.topPick.whyBest}</p>` : ''}
+      ${d.topPick.watchOuts && d.topPick.watchOuts.length ? `
+        <div class="sub-label">Watch-outs</div>
+        <ul>${d.topPick.watchOuts.map(w => `<li>${w}</li>`).join('')}</ul>` : ''}
+      ${d.topPick.nextSteps && d.topPick.nextSteps.length ? `
+        <div class="sub-label">Next steps</div>
+        <ol>${d.topPick.nextSteps.map(s => `<li>${s}</li>`).join('')}</ol>` : ''}
+    `) : '';
+
+    const alertsBlock = d.marketAlerts && d.marketAlerts.length ? section('Market Alerts', d.marketAlerts.map(a => `
+      <div class="alert alert-${a.type}">
+        <div class="alert-header">${alertTypeLabel(a.type)} ${a.title} <span class="impact-badge">${a.impactLevel || ''} impact</span></div>
+        <p>${a.body}</p>
+        ${a.affectedProperties && a.affectedProperties.length ? `<div class="sub-label">Affected properties: ${a.affectedProperties.join(', ')}</div>` : ''}
+        ${a.action ? `<div class="action-box">Action: ${a.action}</div>` : ''}
+      </div>`).join('')) : '';
+
+    const rankingsBlock = d.rankings && d.rankings.length ? section('Property-by-Property Analysis', d.rankings.map((r, i) => `
+      <div class="prop-card">
+        <div class="prop-header">
+          <span class="rank">#${i + 1}</span>
+          <span class="prop-name">${r.name}</span>
+          <span class="badge badge-action">${r.action}</span>
+          <span class="badge badge-risk">${r.risk} risk</span>
+        </div>
+        <div class="meta">${r.city} &bull; ${r.netYield} net yield</div>
+        <p>${r.thesis}</p>
+        <div class="triple-grid">
+          ${r.stressDetail ? `<div class="grid-cell ${survives(r.stressSurvival) ? 'cell-green' : 'cell-red'}"><div class="cell-label">${survives(r.stressSurvival) ? '✓' : '✗'} Stress Test</div><p>${r.stressDetail}</p></div>` : ''}
+          ${r.exitInsight ? `<div class="grid-cell cell-purple"><div class="cell-label">Exit Strategy</div><p>${r.exitInsight}</p></div>` : ''}
+          ${r.momentumAnalysis ? `<div class="grid-cell cell-blue"><div class="cell-label">Momentum</div><p>${r.momentumAnalysis}</p></div>` : ''}
+        </div>
+        ${r.keyRisks && r.keyRisks.length ? `<div class="sub-label">Key risks</div><ul class="risks">${r.keyRisks.map(k => `<li>${k}</li>`).join('')}</ul>` : ''}
+        ${r.signals && r.signals.length ? `<div class="signals">${r.signals.map(s => `<span class="signal">${s}</span>`).join('')}</div>` : ''}
+      </div>`).join('')) : '';
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>YieldMap AI Investment Report</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Georgia', serif; font-size: 13px; color: #1a1a2e; background: #fff; padding: 40px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 26px; font-weight: 700; margin-bottom: 4px; }
+  .report-meta { font-size: 12px; color: #666; margin-bottom: 32px; border-bottom: 2px solid #22C55E; padding-bottom: 12px; }
+  .section { margin-bottom: 32px; }
+  .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: #22C55E; border-bottom: 1px solid #e5e7eb; padding-bottom: 6px; margin-bottom: 14px; }
+  p { line-height: 1.75; color: #374151; margin-bottom: 10px; }
+  ul, ol { padding-left: 18px; color: #374151; line-height: 1.7; margin-bottom: 10px; }
+  li { margin-bottom: 4px; }
+  .meta { font-size: 11px; color: #6b7280; margin-bottom: 10px; }
+  .sub-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #9ca3af; margin: 12px 0 6px; }
+  .grade-row { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .grade { width: 48px; height: 48px; border-radius: 10px; background: #22C55E; color: #fff; font-size: 22px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .grade-sub { font-size: 12px; color: #6b7280; }
+  .alert { padding: 14px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid #9ca3af; background: #f9fafb; }
+  .alert-warning { border-left-color: #F59E0B; background: #fffbeb; }
+  .alert-opportunity { border-left-color: #22C55E; background: #f0fdf4; }
+  .alert-info { border-left-color: #3B82F6; background: #eff6ff; }
+  .alert-header { font-size: 13px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .impact-badge { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: #e5e7eb; color: #374151; text-transform: uppercase; }
+  .action-box { font-size: 12px; color: #374151; background: rgba(0,0,0,0.04); padding: 8px 12px; border-radius: 5px; margin-top: 8px; }
+  .prop-card { border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-bottom: 14px; break-inside: avoid; }
+  .prop-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+  .rank { font-size: 13px; font-weight: 900; color: #9ca3af; min-width: 28px; }
+  .prop-name { font-size: 14px; font-weight: 800; color: #111827; flex: 1; }
+  .badge { font-size: 9px; font-weight: 700; padding: 3px 9px; border-radius: 4px; }
+  .badge-action { background: #dcfce7; color: #15803d; }
+  .badge-risk { border: 1px solid #e5e7eb; color: #6b7280; }
+  .triple-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 12px 0; }
+  .grid-cell { padding: 10px; border-radius: 7px; font-size: 11px; }
+  .cell-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 5px; }
+  .cell-green { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .cell-green .cell-label { color: #15803d; }
+  .cell-red { background: #fef2f2; border: 1px solid #fecaca; }
+  .cell-red .cell-label { color: #dc2626; }
+  .cell-purple { background: #faf5ff; border: 1px solid #e9d5ff; }
+  .cell-purple .cell-label { color: #7c3aed; }
+  .cell-blue { background: #eff6ff; border: 1px solid #bfdbfe; }
+  .cell-blue .cell-label { color: #1d4ed8; }
+  .cell-green p, .cell-red p, .cell-purple p, .cell-blue p { margin: 0; line-height: 1.55; }
+  .risks { color: #dc2626; }
+  .signals { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+  .signal { font-size: 10px; padding: 3px 8px; border-radius: 4px; background: #f3f4f6; border: 1px solid #e5e7eb; color: #6b7280; }
+  .footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; text-align: center; }
+  @media print {
+    body { padding: 20px; }
+    .prop-card { break-inside: avoid; }
+    .section { break-inside: avoid; }
+  }
+</style>
+</head><body>
+<h1>YieldMap AI Investment Report</h1>
+<div class="report-meta">Generated ${date} &bull; ${enriched.filter(p => p.y.netY > 0).length} properties analyzed &bull; Powered by GPT-4o</div>
+${portfolioBlock}
+${topPickBlock}
+${alertsBlock}
+${rankingsBlock}
+<div class="footer">YieldMap &bull; Confidential investment analysis &bull; Not financial advice</div>
+</body></html>`;
+
+    const win = window.open('', '_blank');
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => win.print(), 400);
+  };
+
   // Chatbot send
   const sendChat = async () => {
     if (!chatInput.trim() || chatLoading) return;
@@ -1567,9 +1698,16 @@ INSTRUCTIONS:
                 <div style={{ fontFamily: "'Instrument Serif',Georgia,serif", fontSize: 28, marginBottom: 4 }}>AI Investment Insights</div>
                 <div style={{ fontSize: 13, color: s.txt3 }}>Powered by GPT-4o. Personalized analysis of your {enriched.filter(p=>p.y.netY>0).length} properties based on your investor profile.</div>
               </div>
-              <button onClick={generateInsights} disabled={insightsLoading} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: insightsLoading ? s.surf : 'linear-gradient(135deg,#22C55E,#16A34A)', color: insightsLoading ? s.txt3 : '#0B0F14', fontWeight: 700, fontSize: 12, cursor: insightsLoading ? 'wait' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-                {insightsLoading ? 'Analyzing...' : insightsData ? 'Refresh Analysis' : 'Generate Insights'}
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {insightsData && !insightsData.error && (
+                  <button onClick={downloadInsightsPDF} style={{ padding: '10px 16px', borderRadius: 8, border: `1px solid ${s.border}`, background: s.surf, color: s.txt2, fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    &#x2B73; Download Report
+                  </button>
+                )}
+                <button onClick={generateInsights} disabled={insightsLoading} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: insightsLoading ? s.surf : 'linear-gradient(135deg,#22C55E,#16A34A)', color: insightsLoading ? s.txt3 : '#0B0F14', fontWeight: 700, fontSize: 12, cursor: insightsLoading ? 'wait' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                  {insightsLoading ? 'Analyzing...' : insightsData ? 'Refresh Analysis' : 'Generate Insights'}
+                </button>
+              </div>
             </div>
 
             {insightsLoading && (
