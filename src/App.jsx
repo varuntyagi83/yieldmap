@@ -240,7 +240,7 @@ export default function YieldMap() {
         },
         body: JSON.stringify({
           model: "gpt-4o",
-          max_tokens: 4096,
+          max_tokens: 8192,
           messages: [
             { role: "system", content: systemPrompt },
             ...messages,
@@ -301,22 +301,17 @@ export default function YieldMap() {
   const generateInsights = async () => {
     setInsightsLoading(true);
     const portfolio = buildFullAIContext();
-    const sys = `You are YieldMap AI, an expert real estate investment analyst. The investor profile: tax rate ${profile.taxRate}%, down payment ${profile.downPct}%, mortgage rate ${profile.mortRate}%, ${profile.term}-year loan.
+    const sys = `You are YieldMap AI, a senior real estate investment analyst delivering institutional-grade research. Investor profile: tax rate ${profile.taxRate}%, down payment ${profile.downPct}%, mortgage rate ${profile.mortRate}%, ${profile.term}-year loan.
 
-You have COMPREHENSIVE data for each property including:
-- Yield metrics (net yield, cap rate, cash-on-cash, monthly cash flow)
-- STRESS TEST results (perfect storm scenario: +2% rates, 2x vacancy, -10% rent, $15K repair, +25% tax simultaneously). Shows if property SURVIVES or FAILS and the worst-case cash flow
-- Break-even vacancy threshold (max vacancy before negative cash flow)
-- EXIT STRATEGY data (year-5 net sale proceeds after taxes and costs)
-- NEIGHBORHOOD MOMENTUM (current score, annual trend direction, rent growth rate, key risk)
+Each property record contains: net yield, cap rate, cash-on-cash return, monthly cash flow, stress test result (perfect storm: +2% rates, 2x vacancy, -10% rent, $15K emergency repair, +25% property tax simultaneously), worst-case stress cash flow, break-even vacancy threshold, year-5 net sale proceeds, and neighborhood momentum (score/10, annual trend, rent growth %, primary market risk).
 
-Use ALL of this data in your analysis. Properties that survive the perfect storm are more resilient. High momentum neighborhoods deserve premium weighting. Factor the worst-case probability into your risk ratings.
+ANALYSIS STANDARDS: Write like a senior analyst at a real estate private equity firm. Cite actual numbers from the data in every analysis field. Differentiate clearly between stress survivors and stress failures. Factor momentum trend direction into 5-year outlook. No generic statements — every sentence must contain a specific figure, comparison, or data-backed claim.
 
 CRITICAL: Output ONLY a raw JSON object. No markdown, no backticks, no text outside the JSON.
 
-{"rankings":[{"name":"exact property name","city":"city, ST","netYield":"X.X%","verdict":"2 sentence thesis incorporating stress resilience, momentum, and exit potential","signals":["stress/momentum/exit specific signal","signal2","signal3"],"risk":"Low/Medium/High","action":"Buy/Hold/Watch/Pass","stressSurvival":"Survives or Fails perfect storm","momentumNote":"1 sentence on neighborhood direction"}],"marketAlerts":[{"title":"title","body":"2-3 sentences","type":"opportunity/warning/info"}],"topPick":{"name":"property name","reason":"3 sentence reasoning covering yield + stress resilience + momentum + exit upside"}}
+{"portfolioSummary":{"overallGrade":"A/B/C/D/F","stressResilience":"X of Y properties survive the perfect storm","strategicRecommendation":"4-5 sentence portfolio-level recommendation referencing concentration risk, stress performance distribution, yield range, and the single highest-priority action the investor should take now"},"topPick":{"name":"exact property name","city":"city, ST","netYield":"X.X%","executiveSummary":"5-6 sentences: open with the yield headline and cap rate context, explain stress resilience citing the actual worst-case monthly CF number, quantify the 5-year exit upside with the projected net proceeds, describe neighborhood momentum citing specific rent growth % and trend score, and close with why this fits this specific investor profile","whyBest":"2-3 sentences comparing this property to the next-best alternative in the portfolio and naming the decisive advantage with specific numbers","watchOuts":["specific risk with a concrete mitigation action","second risk with mitigation","third risk if material"],"nextSteps":["concrete actionable step the investor can take in the next 7 days","step 2","step 3"]},"marketAlerts":[{"title":"alert title","body":"4-5 sentences: state the trend, cite the specific data point driving it, quantify the impact on portfolio yields or values, name which markets in this portfolio are affected, and recommend a concrete investor response","affectedProperties":["exact property names from the portfolio affected by this alert"],"action":"One specific action the investor should take in the next 30 days","impactLevel":"High/Medium/Low","type":"opportunity/warning/info"}],"rankings":[{"name":"exact property name","city":"city, ST","netYield":"X.X%","action":"Buy/Hold/Watch/Pass","risk":"Low/Medium/High","thesis":"4-5 sentences: lead with yield quality and how it compares to portfolio average, describe stress test outcome citing the actual worst-case CF, evaluate exit strategy with year-5 net proceeds figure, assess neighborhood momentum trajectory with rent growth rate, and conclude with the decisive buy/hold/pass rationale","stressSurvival":"Survives/Fails perfect storm","stressDetail":"2 sentences: describe exactly what breaks under the stress scenario, cite the worst-case monthly CF, and name the single biggest stress vulnerability for this property","exitInsight":"2 sentences: cite the projected year-5 net proceeds, assess timing risk based on the momentum trend direction, and identify the primary value-add lever","momentumAnalysis":"2 sentences: cite the momentum score and trend, connect the rent growth rate to income upside over 5 years, and name the primary market risk that could derail that trajectory","keyRisks":["specific quantified risk — include a number","second specific risk with context"],"signals":["data-backed signal with a number","signal 2","signal 3","signal 4"]}]}
 
-Rank top 8 properties. Include 3 market alerts that reference stress/momentum data. Be specific with numbers.`;
+Rank exactly 8 properties. Include exactly 4 market alerts. Every text field must contain substantive analysis with specific numbers. No placeholder text anywhere.`;
 
     const text = await callAI([{ role: 'user', content: `Analyze ${enriched.filter(p=>p.y.netY>0).length} properties with full stress/exit/momentum data:\n${portfolio}\n\nRank top 8 factoring stress survival, momentum, and exit. Raw JSON only.` }], sys);
     try {
@@ -1589,17 +1584,66 @@ INSTRUCTIONS:
 
             {insightsData && !insightsData.error && (
               <div>
-                {/* Top pick callout */}
-                {insightsData.topPick && (
-                  <div style={{ padding: 18, background: 'rgba(34,197,94,0.06)', border: '1px solid rgba(34,197,94,0.15)', borderRadius: 12, marginBottom: 24 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                      <span style={{ fontSize: 20 }}>&#x1F3C6;</span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: s.accent, textTransform: 'uppercase', letterSpacing: 0.8 }}>Top pick for your profile</span>
+                {/* Portfolio summary */}
+                {insightsData.portfolioSummary && (
+                  <div style={{ padding: 20, background: s.surf, border: `1px solid ${s.border}`, borderRadius: 12, marginBottom: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 10, background: 'linear-gradient(135deg,#22C55E,#16A34A)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 900, color: '#0B0F14', flexShrink: 0 }}>{insightsData.portfolioSummary.overallGrade}</div>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: s.txt }}>Portfolio Health Grade</div>
+                        <div style={{ fontSize: 11, color: s.txt3, marginTop: 2 }}>{insightsData.portfolioSummary.stressResilience}</div>
+                      </div>
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 800, color: s.txt, marginBottom: 6 }}>{insightsData.topPick.name}</div>
-                    <div style={{ fontSize: 12.5, color: s.txt2, lineHeight: 1.6 }}>{insightsData.topPick.reason}</div>
-                    {(() => { const tp = enriched.find(p => insightsData.topPick.name.includes(p.name.split(' ').slice(0,2).join(' '))); return tp ? (
-                      <button onClick={() => { setSelectedId(tp.id); setView('map'); }} style={{ marginTop: 12, padding: '8px 16px', borderRadius: 6, border: `1px solid ${s.accent}`, background: s.accentDim, color: s.accent, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>View on map &rarr;</button>
+                    <div style={{ fontSize: 12.5, color: s.txt2, lineHeight: 1.7 }}>{insightsData.portfolioSummary.strategicRecommendation}</div>
+                  </div>
+                )}
+
+                {/* Top pick */}
+                {insightsData.topPick && (
+                  <div style={{ padding: 20, background: 'rgba(34,197,94,0.05)', border: '1px solid rgba(34,197,94,0.2)', borderRadius: 12, marginBottom: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <span style={{ fontSize: 18 }}>&#x1F3C6;</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: s.accent, textTransform: 'uppercase', letterSpacing: 0.9 }}>Top pick for your profile</span>
+                      <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 5, background: 'rgba(34,197,94,0.15)', color: s.accent }}>{insightsData.topPick.netYield} net yield</span>
+                    </div>
+                    <div style={{ fontSize: 17, fontWeight: 800, color: s.txt, marginBottom: 4 }}>{insightsData.topPick.name}</div>
+                    <div style={{ fontSize: 11, color: s.txt3, marginBottom: 14 }}>{insightsData.topPick.city}</div>
+
+                    <div style={{ fontSize: 12.5, color: s.txt2, lineHeight: 1.75, marginBottom: 14 }}>{insightsData.topPick.executiveSummary}</div>
+
+                    {insightsData.topPick.whyBest && (
+                      <div style={{ padding: '10px 14px', background: 'rgba(34,197,94,0.06)', borderRadius: 8, marginBottom: 14 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: s.accent, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 5 }}>Why this beats the alternatives</div>
+                        <div style={{ fontSize: 12, color: s.txt2, lineHeight: 1.6 }}>{insightsData.topPick.whyBest}</div>
+                      </div>
+                    )}
+
+                    {insightsData.topPick.watchOuts && insightsData.topPick.watchOuts.length > 0 && (
+                      <div style={{ marginBottom: 14 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: '#F59E0B', textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 }}>Watch-outs</div>
+                        {insightsData.topPick.watchOuts.map((w, i) => (
+                          <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'flex-start' }}>
+                            <span style={{ fontSize: 11, color: '#F59E0B', flexShrink: 0, marginTop: 1 }}>&#9651;</span>
+                            <span style={{ fontSize: 12, color: s.txt2, lineHeight: 1.55 }}>{w}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {insightsData.topPick.nextSteps && insightsData.topPick.nextSteps.length > 0 && (
+                      <div style={{ marginBottom: 14 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: s.txt3, textTransform: 'uppercase', letterSpacing: 0.7, marginBottom: 8 }}>Next steps</div>
+                        {insightsData.topPick.nextSteps.map((step, i) => (
+                          <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 6, alignItems: 'flex-start' }}>
+                            <span style={{ fontSize: 10, fontWeight: 800, color: s.accent, background: 'rgba(34,197,94,0.12)', borderRadius: 3, padding: '1px 6px', flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
+                            <span style={{ fontSize: 12, color: s.txt2, lineHeight: 1.55 }}>{step}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {(() => { const tp = enriched.find(p => insightsData.topPick.name && p.name.toLowerCase().includes(insightsData.topPick.name.toLowerCase().split(' ').slice(0,2).join(' '))); return tp ? (
+                      <button onClick={() => { setSelectedId(tp.id); setView('map'); }} style={{ padding: '8px 16px', borderRadius: 6, border: `1px solid ${s.accent}`, background: s.accentDim, color: s.accent, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>View on map &rarr;</button>
                     ) : null; })()}
                   </div>
                 )}
@@ -1608,15 +1652,38 @@ INSTRUCTIONS:
                 {insightsData.marketAlerts && insightsData.marketAlerts.length > 0 && (
                   <div style={{ marginBottom: 24 }}>
                     <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.9, color: s.txt3, marginBottom: 12 }}>Market alerts</div>
-                    <div style={{ display: 'grid', gap: 8 }}>
-                      {insightsData.marketAlerts.map((a, i) => (
-                        <div key={i} style={{ padding: 14, background: s.surf, border: `1px solid ${a.type === 'warning' ? '#F59E0B25' : a.type === 'opportunity' ? '#22C55E25' : s.border}`, borderRadius: 8, borderLeft: `3px solid ${a.type === 'warning' ? '#F59E0B' : a.type === 'opportunity' ? '#22C55E' : '#3B82F6'}` }}>
-                          <div style={{ fontSize: 12.5, fontWeight: 700, color: s.txt, marginBottom: 4 }}>
-                            {a.type === 'warning' ? '\u26a0\ufe0f' : a.type === 'opportunity' ? '\ud83d\udca1' : '\u2139\ufe0f'} {a.title}
+                    <div style={{ display: 'grid', gap: 10 }}>
+                      {insightsData.marketAlerts.map((a, i) => {
+                        const alertColor = a.type === 'warning' ? '#F59E0B' : a.type === 'opportunity' ? '#22C55E' : '#3B82F6';
+                        const alertBg = a.type === 'warning' ? 'rgba(245,158,11,0.05)' : a.type === 'opportunity' ? 'rgba(34,197,94,0.05)' : 'rgba(59,130,246,0.05)';
+                        return (
+                          <div key={i} style={{ padding: 16, background: alertBg, border: `1px solid ${alertColor}22`, borderRadius: 10, borderLeft: `3px solid ${alertColor}` }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: s.txt }}>
+                                {a.type === 'warning' ? '\u26a0\ufe0f' : a.type === 'opportunity' ? '\ud83d\udca1' : '\u2139\ufe0f'} {a.title}
+                              </div>
+                              {a.impactLevel && (
+                                <span style={{ fontSize: 9.5, fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: a.impactLevel === 'High' ? 'rgba(239,68,68,0.12)' : a.impactLevel === 'Medium' ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)', color: a.impactLevel === 'High' ? '#EF4444' : a.impactLevel === 'Medium' ? '#F59E0B' : '#22C55E' }}>{a.impactLevel} impact</span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: 12.5, color: s.txt2, lineHeight: 1.7, marginBottom: 10 }}>{a.body}</div>
+                            {a.affectedProperties && a.affectedProperties.length > 0 && (
+                              <div style={{ marginBottom: 10 }}>
+                                <span style={{ fontSize: 10, fontWeight: 700, color: s.txt3, textTransform: 'uppercase', letterSpacing: 0.6, marginRight: 8 }}>Affected</span>
+                                {a.affectedProperties.map(p => (
+                                  <span key={p} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, background: `${alertColor}15`, color: alertColor, border: `1px solid ${alertColor}30`, marginRight: 5 }}>{p}</span>
+                                ))}
+                              </div>
+                            )}
+                            {a.action && (
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '8px 12px', background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
+                                <span style={{ fontSize: 11, color: alertColor, flexShrink: 0 }}>&#8594;</span>
+                                <span style={{ fontSize: 11.5, color: s.txt2, lineHeight: 1.5 }}><strong style={{ color: s.txt }}>Action:</strong> {a.action}</span>
+                              </div>
+                            )}
                           </div>
-                          <div style={{ fontSize: 11.5, color: s.txt2, lineHeight: 1.5 }}>{a.body}</div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -1628,42 +1695,72 @@ INSTRUCTIONS:
                     {insightsData.rankings.map((r, i) => {
                       const prop = enriched.find(p => r.name && p.name.toLowerCase().includes(r.name.toLowerCase().split(' ').slice(0,2).join(' ')));
                       const actionColors = { Buy: '#22C55E', Hold: '#3B82F6', Watch: '#F59E0B', Pass: '#EF4444' };
+                      const survives = r.stressSurvival && r.stressSurvival.toLowerCase().includes('surviv');
                       return (
-                        <div key={i} style={{ padding: 14, background: s.surf, border: `1px solid ${s.border}`, borderRadius: 10, marginBottom: 8, cursor: prop ? 'pointer' : 'default' }}
-                          onClick={() => prop && (() => { setSelectedId(prop.id); setView('map'); })()}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span style={{ fontSize: 14, fontWeight: 800, color: s.txt3, width: 24 }}>#{i + 1}</span>
-                                <span style={{ fontSize: 13.5, fontWeight: 700, color: s.txt }}>{r.name}</span>
+                        <div key={i} style={{ padding: 18, background: s.surf, border: `1px solid ${s.border}`, borderRadius: 12, marginBottom: 12 }}>
+                          {/* Header */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                              <span style={{ fontSize: 13, fontWeight: 900, color: s.txt3, minWidth: 28 }}>#{i + 1}</span>
+                              <div>
+                                <div style={{ fontSize: 14, fontWeight: 800, color: s.txt }}>{r.name}</div>
+                                <div style={{ fontSize: 11, color: s.txt3, marginTop: 2 }}>{r.city} &middot; {r.netYield} net yield</div>
                               </div>
-                              <div style={{ fontSize: 11, color: s.txt3, marginLeft: 32, marginTop: 2 }}>{r.city} &middot; {r.netYield} net yield</div>
                             </div>
-                            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                              <span style={{ fontSize: 9.5, fontWeight: 700, padding: '3px 8px', borderRadius: 4, background: (actionColors[r.action] || s.txt3) + '18', color: actionColors[r.action] || s.txt3 }}>{r.action}</span>
-                              <span style={{ fontSize: 9.5, fontWeight: 600, padding: '3px 8px', borderRadius: 4, border: `1px solid ${s.border}`, color: r.risk === 'Low' ? '#22C55E' : r.risk === 'High' ? '#EF4444' : '#F59E0B' }}>{r.risk} risk</span>
+                            <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, padding: '4px 10px', borderRadius: 5, background: (actionColors[r.action] || s.txt3) + '20', color: actionColors[r.action] || s.txt3 }}>{r.action}</span>
+                              <span style={{ fontSize: 10, fontWeight: 600, padding: '4px 10px', borderRadius: 5, border: `1px solid ${s.border}`, color: r.risk === 'Low' ? '#22C55E' : r.risk === 'High' ? '#EF4444' : '#F59E0B' }}>{r.risk} risk</span>
                             </div>
                           </div>
-                          <div style={{ fontSize: 11.5, color: s.txt2, lineHeight: 1.5, marginLeft: 32, marginBottom: 6 }}>{r.verdict}</div>
-                          {/* Stress & momentum badges */}
-                          <div style={{ display: 'flex', gap: 6, marginLeft: 32, marginBottom: 6 }}>
-                            {r.stressSurvival && (
-                              <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 3, background: r.stressSurvival.toLowerCase().includes('surviv') ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)', color: r.stressSurvival.toLowerCase().includes('surviv') ? '#22C55E' : '#EF4444', border: `1px solid ${r.stressSurvival.toLowerCase().includes('surviv') ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}` }}>
-                                {r.stressSurvival.toLowerCase().includes('surviv') ? '\u2705' : '\u274c'} {r.stressSurvival}
-                              </span>
+
+                          {/* Full thesis */}
+                          <div style={{ fontSize: 12.5, color: s.txt2, lineHeight: 1.75, marginBottom: 14 }}>{r.thesis}</div>
+
+                          {/* Stress / Exit / Momentum grid */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 14 }}>
+                            {r.stressDetail && (
+                              <div style={{ padding: 12, background: survives ? 'rgba(34,197,94,0.05)' : 'rgba(239,68,68,0.05)', borderRadius: 8, border: `1px solid ${survives ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'}` }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: survives ? '#22C55E' : '#EF4444', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 }}>{survives ? '\u2705' : '\u274c'} Stress test</div>
+                                <div style={{ fontSize: 11, color: s.txt2, lineHeight: 1.55 }}>{r.stressDetail}</div>
+                              </div>
                             )}
-                            {r.momentumNote && (
-                              <span style={{ fontSize: 9, fontWeight: 600, padding: '2px 7px', borderRadius: 3, background: 'rgba(59,130,246,0.08)', color: '#60A5FA', border: '1px solid rgba(59,130,246,0.15)' }}>
-                                \ud83d\udcc8 {r.momentumNote}
-                              </span>
+                            {r.exitInsight && (
+                              <div style={{ padding: 12, background: 'rgba(139,92,246,0.05)', borderRadius: 8, border: '1px solid rgba(139,92,246,0.15)' }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: '#A78BFA', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 }}>&#x1F4C8; Exit strategy</div>
+                                <div style={{ fontSize: 11, color: s.txt2, lineHeight: 1.55 }}>{r.exitInsight}</div>
+                              </div>
+                            )}
+                            {r.momentumAnalysis && (
+                              <div style={{ padding: 12, background: 'rgba(59,130,246,0.05)', borderRadius: 8, border: '1px solid rgba(59,130,246,0.15)' }}>
+                                <div style={{ fontSize: 10, fontWeight: 700, color: '#60A5FA', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 5 }}>&#x1F680; Momentum</div>
+                                <div style={{ fontSize: 11, color: s.txt2, lineHeight: 1.55 }}>{r.momentumAnalysis}</div>
+                              </div>
                             )}
                           </div>
+
+                          {/* Key risks */}
+                          {r.keyRisks && r.keyRisks.length > 0 && (
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ fontSize: 10, fontWeight: 700, color: s.txt3, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>Key risks</div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                {r.keyRisks.map((risk, ri) => (
+                                  <span key={ri} style={{ fontSize: 11, padding: '4px 10px', borderRadius: 5, background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.15)', color: '#FCA5A5' }}>&#9651; {risk}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Signal badges */}
                           {r.signals && (
-                            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginLeft: 32 }}>
+                            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                               {r.signals.map(sig => (
-                                <span key={sig} style={{ fontSize: 9.5, padding: '2px 7px', borderRadius: 3, background: 'rgba(255,255,255,0.03)', border: `1px solid ${s.border}`, color: s.txt3 }}>{sig}</span>
+                                <span key={sig} style={{ fontSize: 10, padding: '3px 8px', borderRadius: 4, background: 'rgba(255,255,255,0.04)', border: `1px solid ${s.border}`, color: s.txt3 }}>{sig}</span>
                               ))}
                             </div>
+                          )}
+
+                          {prop && (
+                            <button onClick={() => { setSelectedId(prop.id); setView('map'); }} style={{ marginTop: 12, padding: '6px 14px', borderRadius: 5, border: `1px solid ${s.border}`, background: 'transparent', color: s.txt3, fontSize: 10, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>View on map &rarr;</button>
                           )}
                         </div>
                       );
