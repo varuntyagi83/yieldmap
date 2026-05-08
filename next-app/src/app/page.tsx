@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { DiscoveryResult, EnrichedListing, InvestorProfile, DEFAULT_PROFILE } from '@/lib/types';
 import { discoverProperties } from '@/lib/discovery-engine';
@@ -65,8 +65,18 @@ export default function HomePage() {
   const [showMoreDropdown, setShowMoreDropdown] = useState(false);
   const [themeMode, setThemeMode] = useState<'dark' | 'light' | 'system'>('dark');
   const [error, setError] = useState<string | null>(null);
+  const didAutoSearch = useRef(false);
 
   const s = getTheme(themeMode);
+
+  // Auto-load the default zip on first mount so the app opens with data already populated.
+  // The API route serves this from a committed fixture, so no RentCast quota is consumed.
+  useEffect(() => {
+    if (didAutoSearch.current) return;
+    didAutoSearch.current = true;
+    handleSearch('75409');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleSearch(zip: string) {
     setLoading(true);
