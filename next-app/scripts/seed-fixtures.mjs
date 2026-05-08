@@ -74,7 +74,6 @@ async function seedZip(zip) {
 
 console.log('YieldMap fixture seeder');
 console.log('=======================');
-console.log(`API key: ${API_KEY.slice(0, 8)}...`);
 
 for (const zip of ZIP_CODES) {
   await seedZip(zip);
