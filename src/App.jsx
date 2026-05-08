@@ -170,7 +170,7 @@ export default function YieldMap() {
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
-  const [themeMode, setThemeMode] = useState('dark'); // 'dark' | 'light' | 'system'
+  const [themeMode, setThemeMode] = useState('light'); // 'dark' | 'light' | 'system'
   const [insightsData, setInsightsData] = useState(null);
   const [insightsLoading, setInsightsLoading] = useState(false);
   const [showMore, setShowMore] = useState(false);
