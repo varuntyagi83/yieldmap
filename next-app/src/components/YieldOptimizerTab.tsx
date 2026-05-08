@@ -34,29 +34,24 @@ interface ScenarioGroup {
 
 export default function YieldOptimizerTab({ listings, profile, selected, onSelect, s }: Props) {
   const propertySelector = (
-    <div style={{ marginBottom: 20 }}>
+    <div style={{ marginBottom: 24 }}>
       <div style={{ fontSize: 11, color: s.txt3, textTransform: 'uppercase' as const, letterSpacing: 1, marginBottom: 8 }}>Select a property</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8 }}>
-        {listings.map((l) => {
-          const addr = l.formattedAddress.length > 30 ? l.formattedAddress.slice(0, 29) + '...' : l.formattedAddress;
-          const isActive = selected?.id === l.id;
-          return (
-            <button
-              key={l.id}
-              onClick={() => onSelect(l)}
-              style={{
-                padding: '6px 12px', fontSize: 12, borderRadius: 6, cursor: 'pointer',
-                background: isActive ? s.accent : s.surf,
-                color: isActive ? '#fff' : s.txt2,
-                border: `1px solid ${isActive ? s.accent : s.border}`,
-                fontWeight: isActive ? 600 : 400,
-              }}
-            >
-              {addr}
-            </button>
-          );
-        })}
-      </div>
+      <select
+        value={selected?.id ?? ''}
+        onChange={e => { const l = listings.find(l => l.id === e.target.value); if (l) onSelect(l); }}
+        style={{
+          width: '100%', maxWidth: 560, padding: '10px 14px', borderRadius: 8, fontSize: 13,
+          background: s.surf, color: s.txt, border: `1px solid ${s.border}`, cursor: 'pointer',
+          outline: 'none', appearance: 'auto',
+        }}
+      >
+        <option value="">— Choose a property —</option>
+        {listings.map(l => (
+          <option key={l.id} value={l.id}>
+            {l.formattedAddress}, {l.city} · Net {l.yield.netYield.toFixed(1)}% · CF ${Math.round(l.yield.monthlyCashFlow)}/mo
+          </option>
+        ))}
+      </select>
     </div>
   );
 
