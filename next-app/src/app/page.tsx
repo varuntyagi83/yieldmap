@@ -308,15 +308,15 @@ export default function HomePage() {
               ))}
             </div>
           </div>
-        </div>
 
-        {/* Detail panel (map only) */}
-        {selected && activeTab === 'map' && (
-          <PropertyDetailPanel
-            listing={selected}
-            onClose={() => setSelected(null)}
-          />
-        )}
+          {/* Detail panel — inside the inner content so it never reserves width when closed */}
+          {selected && activeTab === 'map' && (
+            <PropertyDetailPanel
+              listing={selected}
+              onClose={() => setSelected(null)}
+            />
+          )}
+        </div>
       </div>
 
       {/* Floating chatbot */}
