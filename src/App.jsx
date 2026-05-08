@@ -338,7 +338,9 @@ Rank exactly 8 properties. Include exactly 4 market alerts. Every text field mus
   const downloadInsightsPDF = () => {
     if (!insightsData || insightsData.error) return;
     const d = insightsData;
-    const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const now = new Date();
+    const date = now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const fileDate = now.toISOString().slice(0, 10);
 
     const section = (title, content) => `
       <div class="section">
@@ -397,7 +399,7 @@ Rank exactly 8 properties. Include exactly 4 market alerts. Every text field mus
       </div>`).join('')) : '';
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>YieldMap AI Investment Report</title>
+<title>${fileDate}_Yieldmap_AI_Investment_Report</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Georgia', serif; font-size: 13px; color: #1a1a2e; background: #fff; padding: 40px; max-width: 900px; margin: 0 auto; }
