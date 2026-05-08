@@ -1570,7 +1570,7 @@ INSTRUCTIONS:
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
               <div>
                 <div style={{ fontFamily: "'Instrument Serif',Georgia,serif", fontSize: 28, marginBottom: 4 }}>AI Investment Insights</div>
-                <div style={{ fontSize: 13, color: s.txt3 }}>Powered by Claude. Personalized analysis of your {enriched.filter(p=>p.y.netY>0).length} properties based on your investor profile.</div>
+                <div style={{ fontSize: 13, color: s.txt3 }}>Powered by GPT-4o. Personalized analysis of your {enriched.filter(p=>p.y.netY>0).length} properties based on your investor profile.</div>
               </div>
               <button onClick={generateInsights} disabled={insightsLoading} style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: insightsLoading ? s.surf : 'linear-gradient(135deg,#22C55E,#16A34A)', color: insightsLoading ? s.txt3 : '#0B0F14', fontWeight: 700, fontSize: 12, cursor: insightsLoading ? 'wait' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
                 {insightsLoading ? 'Analyzing...' : insightsData ? 'Refresh Analysis' : 'Generate Insights'}
@@ -1580,7 +1580,7 @@ INSTRUCTIONS:
             {insightsLoading && (
               <div style={{ textAlign: 'center', padding: '60px 0' }}>
                 <div style={{ fontSize: 14, color: s.accent, fontWeight: 600, marginBottom: 8 }}>Analyzing your portfolio...</div>
-                <div style={{ fontSize: 12, color: s.txt3 }}>Claude is evaluating {enriched.filter(p=>p.y.netY>0).length} properties across {new Set(enriched.filter(p=>p.y.netY>0).map(p=>p.city)).size} markets</div>
+                <div style={{ fontSize: 12, color: s.txt3 }}>GPT-4o is evaluating {enriched.filter(p=>p.y.netY>0).length} properties across {new Set(enriched.filter(p=>p.y.netY>0).map(p=>p.city)).size} markets</div>
                 <div style={{ width: 200, height: 3, background: s.surf, borderRadius: 3, margin: '20px auto', overflow: 'hidden' }}>
                   <div style={{ width: '60%', height: '100%', background: s.accent, borderRadius: 3, animation: 'pulse 1.5s ease-in-out infinite' }} />
                 </div>
@@ -1687,7 +1687,7 @@ INSTRUCTIONS:
                 <div style={{ fontSize: 48, marginBottom: 16 }}>&#x1F9E0;</div>
                 <div style={{ fontSize: 16, fontWeight: 700, color: s.txt2, marginBottom: 6 }}>Your AI investment analyst</div>
                 <div style={{ fontSize: 12, maxWidth: 400, margin: '0 auto', lineHeight: 1.6 }}>
-                  Click "Generate Insights" to get Claude-powered analysis of all your properties. You'll receive ranked recommendations with buy/hold/watch ratings, market alerts, and a top pick tailored to your investor profile.
+                  Click "Generate Insights" to get GPT-4o-powered analysis of all your properties. You'll receive ranked recommendations with buy/hold/watch ratings, market alerts, and a top pick tailored to your investor profile.
                 </div>
               </div>
             )}
