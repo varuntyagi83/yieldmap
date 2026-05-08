@@ -291,92 +291,36 @@ export default function HomePage() {
             />
           )}
 
-          {/* AI Insights tab */}
-          {activeTab === 'insights' && !loading && (
-            <AIInsightsTab
-              listings={displayed}
-              profile={profile}
-              selected={selected}
-              onSelect={handleSelectListing}
-              s={s}
-            />
-          )}
-
-          {/* Portfolio tab */}
-          {activeTab === 'portfolio' && !loading && (
-            <PortfolioTab
-              listings={displayed}
-              profile={profile}
-              selected={selected}
-              onSelect={handleSelectListing}
-              s={s}
-            />
-          )}
-
-          {/* Stress Test tab */}
-          {activeTab === 'stress' && !loading && (
-            <StressTestTab
-              listings={displayed}
-              profile={profile}
-              selected={selected}
-              onSelect={setSelected}
-              s={s}
-            />
-          )}
-
-          {/* Exit Strategy tab */}
-          {activeTab === 'exit' && !loading && (
-            <ExitStrategyTab
-              listings={displayed}
-              profile={profile}
-              selected={selected}
-              onSelect={setSelected}
-              s={s}
-            />
-          )}
-
-          {/* Neighborhood Momentum tab */}
-          {activeTab === 'momentum' && !loading && (
-            <MomentumTab
-              listings={displayed}
-              profile={profile}
-              selected={selected}
-              onSelect={setSelected}
-              s={s}
-            />
-          )}
-
-          {/* Yield Optimizer tab */}
-          {activeTab === 'optimize' && !loading && (
-            <YieldOptimizerTab
-              listings={displayed}
-              profile={profile}
-              selected={selected}
-              onSelect={setSelected}
-              s={s}
-            />
-          )}
-
-          {/* Services Marketplace tab */}
-          {activeTab === 'services' && !loading && (
-            <ServicesTab
-              listings={displayed}
-              profile={profile}
-              selected={selected}
-              onSelect={setSelected}
-              s={s}
-            />
-          )}
-
-          {/* Investor Network tab */}
-          {activeTab === 'network' && !loading && (
-            <NetworkTab
-              listings={displayed}
-              profile={profile}
-              selected={selected}
-              onSelect={setSelected}
-              s={s}
-            />
+          {/* All non-map/compare tabs — scrollable container */}
+          {!isMapOrCompare && !loading && (
+            <div className="flex-1 overflow-y-auto" style={{ background: s.bg }}>
+              <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 24px 80px' }}>
+                {activeTab === 'insights' && (
+                  <AIInsightsTab listings={displayed} profile={profile} selected={selected} onSelect={handleSelectListing} s={s} />
+                )}
+                {activeTab === 'portfolio' && (
+                  <PortfolioTab listings={displayed} profile={profile} selected={selected} onSelect={handleSelectListing} s={s} />
+                )}
+                {activeTab === 'stress' && (
+                  <StressTestTab listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />
+                )}
+                {activeTab === 'exit' && (
+                  <ExitStrategyTab listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />
+                )}
+                {activeTab === 'momentum' && (
+                  <MomentumTab listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />
+                )}
+                {activeTab === 'optimize' && (
+                  <YieldOptimizerTab listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />
+                )}
+                {activeTab === 'services' && (
+                  <ServicesTab listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />
+                )}
+                {activeTab === 'network' && (
+                  <NetworkTab listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />
+                )}
+              </div>
+            </div>
           )}
         </div>
 
