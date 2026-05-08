@@ -5,6 +5,7 @@ import { DiscoveryResult, EnrichedListing, InvestorProfile, DEFAULT_PROFILE } fr
 import { discoverProperties } from '@/lib/discovery-engine';
 import { enrichListing } from '@/lib/yield-engine';
 import { applyFilters, Filters, DEFAULT_FILTERS } from '@/components/FilterSidebar';
+import { getTheme, ThemeStyles } from '@/lib/theme';
 import SearchBar from '@/components/SearchBar';
 import FilterSidebar from '@/components/FilterSidebar';
 import FilterImpactBanner from '@/components/FilterImpactBanner';
@@ -12,7 +13,45 @@ import InvestorProfilePopover from '@/components/InvestorProfilePopover';
 import PropertyDetailPanel from '@/components/PropertyDetailPanel';
 import CompareTable from '@/components/CompareTable';
 
+interface TabProps {
+  listings: EnrichedListing[];
+  profile: InvestorProfile;
+  selected: EnrichedListing | null;
+  onSelect: (listing: EnrichedListing) => void;
+  s: ThemeStyles;
+}
+interface ChatBotProps {
+  listings: EnrichedListing[];
+  profile: InvestorProfile;
+  s: ThemeStyles;
+}
+
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false });
+const AIInsightsTab = dynamic<TabProps>(() => import('@/components/AIInsightsTab'), { ssr: false });
+const PortfolioTab = dynamic<TabProps>(() => import('@/components/PortfolioTab'), { ssr: false });
+const StressTestTab = dynamic<TabProps>(() => import('@/components/StressTestTab'), { ssr: false });
+const ExitStrategyTab = dynamic<TabProps>(() => import('@/components/ExitStrategyTab'), { ssr: false });
+const MomentumTab = dynamic<TabProps>(() => import('@/components/MomentumTab'), { ssr: false });
+const YieldOptimizerTab = dynamic<TabProps>(() => import('@/components/YieldOptimizerTab'), { ssr: false });
+const ServicesTab = dynamic<TabProps>(() => import('@/components/ServicesTab'), { ssr: false });
+const NetworkTab = dynamic<TabProps>(() => import('@/components/NetworkTab'), { ssr: false });
+const ChatBot = dynamic<ChatBotProps>(() => import('@/components/ChatBot'), { ssr: false });
+
+type ViewTab =
+  | 'map' | 'compare'
+  | 'insights' | 'portfolio'
+  | 'stress' | 'exit' | 'momentum' | 'optimize' | 'services' | 'network';
+
+const MORE_TABS: Array<{ key: ViewTab; icon: string; label: string; desc: string }> = [
+  { key: 'stress', icon: '🚨', label: 'Stress Test', desc: 'What could go wrong scenarios' },
+  { key: 'exit', icon: '✈️', label: 'Exit Strategy', desc: 'Hold vs sell vs refi vs 1031' },
+  { key: 'momentum', icon: '📈', label: 'Neighborhood Momentum', desc: 'Where markets are heading' },
+  { key: 'optimize', icon: '✨', label: 'Yield Optimizer', desc: 'Boost your returns' },
+  { key: 'services', icon: '🛠️', label: 'Services Marketplace', desc: 'Vetted investor providers' },
+  { key: 'network', icon: '🤝', label: 'Investor Network', desc: 'Share deals, find partners' },
+];
+
+const MORE_TAB_KEYS = MORE_TABS.map(t => t.key);
 
 export default function HomePage() {
   const [result, setResult] = useState<DiscoveryResult | null>(null);
@@ -22,8 +61,12 @@ export default function HomePage() {
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [selected, setSelected] = useState<EnrichedListing | null>(null);
   const [showAll, setShowAll] = useState(false);
-  const [activeTab, setActiveTab] = useState<'map' | 'compare'>('map');
+  const [activeTab, setActiveTab] = useState<ViewTab>('map');
+  const [showMoreDropdown, setShowMoreDropdown] = useState(false);
+  const [themeMode, setThemeMode] = useState<'dark' | 'light' | 'system'>('dark');
   const [error, setError] = useState<string | null>(null);
+
+  const s = getTheme(themeMode);
 
   async function handleSearch(zip: string) {
     setLoading(true);
@@ -33,6 +76,7 @@ export default function HomePage() {
     try {
       const data = await discoverProperties(zip, profile);
       setResult(data);
+      if (activeTab !== 'map' && activeTab !== 'compare') setActiveTab('map');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Search failed');
     } finally {
@@ -40,7 +84,6 @@ export default function HomePage() {
     }
   }
 
-  // Re-enrich qualifying list when profile changes (client-side, no API call)
   const reEnrichedResult = useMemo(() => {
     if (!result) return null;
     const allListings = [...result.qualifying, ...result.nonQualifying];
@@ -63,46 +106,93 @@ export default function HomePage() {
   const centerLat = reEnrichedResult?.qualifying[0]?.latitude;
   const centerLng = reEnrichedResult?.qualifying[0]?.longitude;
 
+  const isMapOrCompare = activeTab === 'map' || activeTab === 'compare';
+  const isMoreTab = MORE_TAB_KEYS.includes(activeTab as ViewTab);
+  const activeMoreLabel = MORE_TABS.find(t => t.key === activeTab)?.label;
+
+  function handleSelectListing(listing: EnrichedListing) {
+    setSelected(listing);
+    setActiveTab('map');
+  }
+
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-[#0B0F14]">
       {/* Header */}
-      <header className="h-14 flex items-center gap-4 px-4 border-b border-white/7 bg-[#111820] flex-shrink-0 z-20">
+      <header className="h-14 flex items-center gap-3 px-4 border-b border-white/7 bg-[#111820] flex-shrink-0 z-20">
         {/* Logo */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="w-7 h-7 bg-[#22C55E] rounded-md flex items-center justify-center text-[#0B0F14] font-black text-sm">Y</div>
-          <span className="font-bold text-[#EEF0F4] text-sm tracking-tight">YieldMap</span>
+          <span className="font-bold text-[#EEF0F4] text-sm tracking-tight hidden sm:block">YieldMap</span>
         </div>
 
-        {/* Search bar — center */}
-        <div className="flex-1 max-w-lg mx-auto">
+        {/* Search bar */}
+        <div className="flex-1 max-w-md mx-auto">
           <SearchBar onSearch={handleSearch} loading={loading} currentZip={currentZip} />
         </div>
 
-        {/* Right: tab + profile */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          {result && (
-            <div className="flex bg-[#0B0F14] rounded-lg p-0.5 border border-white/7">
-              {(['map', 'compare'] as const).map(tab => (
-                <button key={tab} onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${activeTab === tab ? 'bg-[#22C55E]/15 text-[#22C55E]' : 'text-[#8A94A6] hover:text-[#EEF0F4]'}`}>
-                  {tab === 'map' ? '🗺 Map' : '📊 Compare'}
-                </button>
-              ))}
+        {/* Navigation + controls */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {/* Primary tabs: always visible */}
+          <div style={{ display: 'flex', gap: 2 }}>
+            {([['map', '🗺 Map'], ['compare', '📊 Compare']] as const).map(([tab, label]) => (
+              <button key={tab} onClick={() => setActiveTab(tab)}
+                style={{ padding: '5px 10px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: activeTab === tab ? s.accentDim : 'transparent', color: activeTab === tab ? s.accent : s.txt2, fontFamily: 'inherit' }}>
+                {label}
+              </button>
+            ))}
+
+            {/* AI Insights + Portfolio */}
+            {([['insights', '🧠 Insights'], ['portfolio', '📁 Portfolio']] as const).map(([tab, label]) => (
+              <button key={tab} onClick={() => setActiveTab(tab)}
+                style={{ padding: '5px 10px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: activeTab === tab ? s.accentDim : 'transparent', color: activeTab === tab ? s.accent : s.txt2, fontFamily: 'inherit' }}>
+                {label}
+              </button>
+            ))}
+
+            {/* More dropdown */}
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setShowMoreDropdown(v => !v)}
+                style={{ padding: '5px 10px', borderRadius: 7, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 600, background: isMoreTab || showMoreDropdown ? s.accentDim : 'transparent', color: isMoreTab || showMoreDropdown ? s.accent : s.txt2, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4 }}>
+                {isMoreTab ? activeMoreLabel : 'More'} <span style={{ fontSize: 8 }}>{showMoreDropdown ? '▲' : '▼'}</span>
+              </button>
+              {showMoreDropdown && (
+                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: s.card, border: `1px solid ${s.borderH}`, borderRadius: 10, boxShadow: '0 12px 40px rgba(0,0,0,0.4)', zIndex: 200, overflow: 'hidden', minWidth: 210 }}>
+                  {MORE_TABS.map(({ key, icon, label, desc }) => (
+                    <button key={key} onClick={() => { setActiveTab(key); setShowMoreDropdown(false); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 14px', border: 'none', borderBottom: `1px solid ${s.border}`, background: activeTab === key ? s.accentDim : 'transparent', color: s.txt, cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                      <span style={{ fontSize: 15, width: 22, textAlign: 'center' }}>{icon}</span>
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 600, color: activeTab === key ? s.accent : s.txt }}>{label}</div>
+                        <div style={{ fontSize: 10, color: s.txt3 }}>{desc}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
+
+          {/* Theme toggle */}
+          <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.07)', overflow: 'hidden', marginLeft: 4 }}>
+            {([['dark', '🌙'], ['light', '☀️'], ['system', '💻']] as const).map(([mode, icon]) => (
+              <button key={mode} onClick={() => setThemeMode(mode)} title={mode}
+                style={{ padding: '4px 7px', border: 'none', cursor: 'pointer', fontSize: 11, background: themeMode === mode ? s.accentDim : 'transparent', color: themeMode === mode ? s.accent : s.txt3, fontFamily: 'inherit', lineHeight: 1 }}>{icon}</button>
+            ))}
+          </div>
+
           <InvestorProfilePopover profile={profile} onChange={setProfile} />
         </div>
       </header>
 
-      {/* Filter impact banner */}
-      {reEnrichedResult && (
+      {/* Filter impact banner (map/compare only) */}
+      {reEnrichedResult && isMapOrCompare && (
         <FilterImpactBanner result={reEnrichedResult} />
       )}
 
       {/* Body */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar — only when there are results */}
-        {reEnrichedResult && (
+      <div className="flex flex-1 overflow-hidden" onClick={() => showMoreDropdown && setShowMoreDropdown(false)}>
+        {/* Sidebar (map/compare only) */}
+        {reEnrichedResult && isMapOrCompare && (
           <FilterSidebar
             filters={filters}
             onChange={setFilters}
@@ -114,8 +204,9 @@ export default function HomePage() {
 
         {/* Main content */}
         <div className="flex flex-1 overflow-hidden relative">
-          {/* Empty / loading states */}
-          {!result && !loading && (
+
+          {/* Empty / loading / error states (map/compare only) */}
+          {isMapOrCompare && !result && !loading && (
             <div className="flex-1 flex flex-col items-center justify-center text-center gap-4 p-8">
               <div className="w-16 h-16 bg-[#22C55E]/10 rounded-full flex items-center justify-center text-3xl">🏘</div>
               <div className="text-lg font-semibold text-[#EEF0F4]">Search a zip code to discover deals</div>
@@ -160,7 +251,6 @@ export default function HomePage() {
                   centerLng={centerLng}
                 />
               </div>
-              {/* Show all toggle */}
               <div className="absolute bottom-4 left-4 z-10">
                 <button onClick={() => setShowAll(v => !v)}
                   className="flex items-center gap-2 px-3 py-2 bg-[#111820] border border-white/10 rounded-lg text-xs font-medium text-[#8A94A6] hover:border-white/20 hover:text-[#EEF0F4] transition-colors">
@@ -168,20 +258,19 @@ export default function HomePage() {
                   Show all listings
                 </button>
               </div>
-              {/* Status bar */}
               {displayed.length > 0 && (
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
                   <div className="px-4 py-2 bg-[#111820]/90 border border-white/10 rounded-full text-xs text-[#8A94A6] backdrop-blur-sm whitespace-nowrap">
                     Showing {displayed.length} qualifying
-                    {displayed.length > 0 && ` · avg yield ${(displayed.reduce((s, l) => s + l.yield.netYield, 0) / displayed.length).toFixed(1)}%`}
-                    {displayed.length > 0 && ` · best ${Math.max(...displayed.map(l => l.yield.netYield)).toFixed(1)}%`}
+                    {` · avg yield ${(displayed.reduce((sum, l) => sum + l.yield.netYield, 0) / displayed.length).toFixed(1)}%`}
+                    {` · best ${Math.max(...displayed.map(l => l.yield.netYield)).toFixed(1)}%`}
                   </div>
                 </div>
               )}
             </>
           )}
 
-          {/* Compare table view */}
+          {/* Compare view */}
           {reEnrichedResult && !loading && activeTab === 'compare' && (
             <CompareTable
               listings={displayed}
@@ -191,16 +280,109 @@ export default function HomePage() {
               zipCode={reEnrichedResult.zipCode}
             />
           )}
+
+          {/* AI Insights tab */}
+          {activeTab === 'insights' && !loading && (
+            <AIInsightsTab
+              listings={displayed}
+              profile={profile}
+              selected={selected}
+              onSelect={handleSelectListing}
+              s={s}
+            />
+          )}
+
+          {/* Portfolio tab */}
+          {activeTab === 'portfolio' && !loading && (
+            <PortfolioTab
+              listings={displayed}
+              profile={profile}
+              selected={selected}
+              onSelect={handleSelectListing}
+              s={s}
+            />
+          )}
+
+          {/* Stress Test tab */}
+          {activeTab === 'stress' && !loading && (
+            <StressTestTab
+              listings={displayed}
+              profile={profile}
+              selected={selected}
+              onSelect={setSelected}
+              s={s}
+            />
+          )}
+
+          {/* Exit Strategy tab */}
+          {activeTab === 'exit' && !loading && (
+            <ExitStrategyTab
+              listings={displayed}
+              profile={profile}
+              selected={selected}
+              onSelect={setSelected}
+              s={s}
+            />
+          )}
+
+          {/* Neighborhood Momentum tab */}
+          {activeTab === 'momentum' && !loading && (
+            <MomentumTab
+              listings={displayed}
+              profile={profile}
+              selected={selected}
+              onSelect={setSelected}
+              s={s}
+            />
+          )}
+
+          {/* Yield Optimizer tab */}
+          {activeTab === 'optimize' && !loading && (
+            <YieldOptimizerTab
+              listings={displayed}
+              profile={profile}
+              selected={selected}
+              onSelect={setSelected}
+              s={s}
+            />
+          )}
+
+          {/* Services Marketplace tab */}
+          {activeTab === 'services' && !loading && (
+            <ServicesTab
+              listings={displayed}
+              profile={profile}
+              selected={selected}
+              onSelect={setSelected}
+              s={s}
+            />
+          )}
+
+          {/* Investor Network tab */}
+          {activeTab === 'network' && !loading && (
+            <NetworkTab
+              listings={displayed}
+              profile={profile}
+              selected={selected}
+              onSelect={setSelected}
+              s={s}
+            />
+          )}
         </div>
 
-        {/* Detail panel */}
-        {selected && (
+        {/* Detail panel (map only) */}
+        {selected && activeTab === 'map' && (
           <PropertyDetailPanel
             listing={selected}
             onClose={() => setSelected(null)}
           />
         )}
       </div>
+
+      {/* Floating chatbot */}
+      {displayed.length > 0 && (
+        <ChatBot listings={displayed} profile={profile} s={s} />
+      )}
     </div>
   );
 }
