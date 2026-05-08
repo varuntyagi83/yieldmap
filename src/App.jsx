@@ -232,17 +232,24 @@ export default function YieldMap() {
 
   const callAI = async (messages, systemPrompt) => {
     try {
-      const resp = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
+        },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 4096,
-          system: systemPrompt,
-          messages: messages,
+          model: "gpt-4o",
+          max_tokens: 4096,
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages,
+          ],
         })
       });
       const data = await resp.json();
       if (data.error) return `API Error: ${data.error.message || JSON.stringify(data.error)}`;
-      return data.content?.find(b => b.type === 'text')?.text || 'No text in response';
+      return data.choices?.[0]?.message?.content || 'No text in response';
     } catch (e) {
       return `Network error: ${e.message}`;
     }
