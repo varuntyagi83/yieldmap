@@ -291,37 +291,23 @@ export default function HomePage() {
             />
           )}
 
-          {/* All non-map/compare tabs — scrollable container */}
-          {!isMapOrCompare && !loading && (
-            <div className="flex-1 overflow-y-auto" style={{ background: s.bg }}>
-              <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 24px 80px' }}>
-                {activeTab === 'insights' && (
-                  <AIInsightsTab listings={displayed} profile={profile} selected={selected} onSelect={handleSelectListing} s={s} />
-                )}
-                {activeTab === 'portfolio' && (
-                  <PortfolioTab listings={displayed} profile={profile} selected={selected} onSelect={handleSelectListing} s={s} />
-                )}
-                {activeTab === 'stress' && (
-                  <StressTestTab listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />
-                )}
-                {activeTab === 'exit' && (
-                  <ExitStrategyTab listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />
-                )}
-                {activeTab === 'momentum' && (
-                  <MomentumTab listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />
-                )}
-                {activeTab === 'optimize' && (
-                  <YieldOptimizerTab listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />
-                )}
-                {activeTab === 'services' && (
-                  <ServicesTab listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />
-                )}
-                {activeTab === 'network' && (
-                  <NetworkTab listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />
-                )}
-              </div>
+          {/* All non-map/compare tabs — always mounted to preserve state across tab switches */}
+          <div className="flex-1 overflow-y-auto" style={{ background: s.bg, display: isMapOrCompare || loading ? 'none' : 'block' }}>
+            <div style={{ maxWidth: 960, margin: '0 auto', padding: '0 24px 80px' }}>
+              {([
+                ['insights',  <AIInsightsTab    key="insights"  listings={displayed} profile={profile} selected={selected} onSelect={handleSelectListing} s={s} />],
+                ['portfolio', <PortfolioTab     key="portfolio" listings={displayed} profile={profile} selected={selected} onSelect={handleSelectListing} s={s} />],
+                ['stress',    <StressTestTab    key="stress"    listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />],
+                ['exit',      <ExitStrategyTab  key="exit"      listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />],
+                ['momentum',  <MomentumTab      key="momentum"  listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />],
+                ['optimize',  <YieldOptimizerTab key="optimize" listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />],
+                ['services',  <ServicesTab      key="services"  listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />],
+                ['network',   <NetworkTab       key="network"   listings={displayed} profile={profile} selected={selected} onSelect={setSelected} s={s} />],
+              ] as [string, React.ReactNode][]).map(([tab, el]) => (
+                <div key={tab} style={{ display: activeTab === tab ? undefined : 'none' }}>{el}</div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
 
         {/* Detail panel (map only) */}
