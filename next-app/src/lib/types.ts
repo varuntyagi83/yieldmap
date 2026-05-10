@@ -65,6 +65,9 @@ export interface EnrichedListing extends RentCastListing {
   qualifies: boolean;
   yieldColor: string;
   yieldLabel: string;
+  maxOfferPrice: number | null;
+  discountFromAsk: number;
+  negotiability: 'easy' | 'moderate' | 'hard' | 'unrealistic';
 }
 
 export interface DiscoveryResult {
@@ -75,6 +78,7 @@ export interface DiscoveryResult {
   filterPercentage: number;
   qualifying: EnrichedListing[];
   nonQualifying: EnrichedListing[];
+  boundary: EnrichedListing[];
   marketSummary: {
     avgPrice: number;
     avgRent: number;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calcMortgagePayment, calcYield, qualifiesForInvestment, getYieldColor, getYieldLabel, enrichListing } from './yield-engine';
+import { calcMortgagePayment, calcYield, qualifiesForInvestment, getYieldColor, getYieldLabel, enrichListing, calcMaxOfferPrice } from './yield-engine';
 import { RentCastListing, InvestorProfile, DEFAULT_PROFILE } from './types';
 
 function makeListing(overrides: Partial<RentCastListing> = {}): RentCastListing {
@@ -160,5 +160,50 @@ describe('enrichListing', () => {
     expect(typeof enriched.qualifies).toBe('boolean');
     expect(enriched.yieldColor).toMatch(/^#/);
     expect(enriched.yieldLabel).toBeTruthy();
+  });
+});
+
+describe('calcMaxOfferPrice', () => {
+  it('returns listing.price for an already-qualifying property', () => {
+    const listing = makeListing({ price: 200000, estimatedRent: 1800 });
+    const result = calcMaxOfferPrice(listing, baseProfile);
+    expect(result).toBe(200000);
+  });
+
+  it('returns null for a listing with price=0', () => {
+    const listing = makeListing({ price: 0, estimatedRent: 1800 });
+    const result = calcMaxOfferPrice(listing, baseProfile);
+    expect(result).toBeNull();
+  });
+
+  it('returns null for a listing with estimatedRent=0', () => {
+    const listing = makeListing({ price: 200000, estimatedRent: 0 });
+    const result = calcMaxOfferPrice(listing, baseProfile);
+    expect(result).toBeNull();
+  });
+
+  it('returns a price below listing.price for a property needing ~10% discount', () => {
+    // $1M property with rent that barely misses qualification — needs a price reduction
+    const listing = makeListing({ price: 1000000, estimatedRent: 4167, state: 'NC' });
+    const profile = { ...baseProfile, mortRate: 6.0 };
+    const result = calcMaxOfferPrice(listing, profile);
+    expect(result).not.toBeNull();
+    if (result !== null) {
+      expect(result).toBeLessThan(listing.price);
+      // Should be within ~20% of ask (a reasonable negotiation range)
+      expect(result).toBeGreaterThan(listing.price * 0.7);
+    }
+  });
+
+  it('returns a price significantly below ask for a high-price-to-rent property', () => {
+    // $5M with modest rent — maxOfferPrice should be well below ask
+    const listing = makeListing({ price: 5000000, estimatedRent: 5000, state: 'NC' });
+    const result = calcMaxOfferPrice(listing, baseProfile);
+    // Either null (never qualifies) or significantly below ask
+    if (result !== null) {
+      expect(result).toBeLessThan(listing.price * 0.5);
+    } else {
+      expect(result).toBeNull();
+    }
   });
 });

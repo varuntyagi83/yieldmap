@@ -108,6 +108,11 @@ export async function discoverProperties(zipCode: string, profile: InvestorProfi
   const qualifying = enrichedListings.filter(l => l.qualifies).sort((a, b) => b.yield.netYield - a.yield.netYield);
   const nonQualifying = enrichedListings.filter(l => !l.qualifies);
 
+  const boundary = nonQualifying
+    .filter(l => l.discountFromAsk > 0 && l.discountFromAsk <= 10)
+    .sort((a, b) => a.discountFromAsk - b.discountFromAsk)
+    .slice(0, 50);
+
   console.log(`[Discovery] ${zipCode}: validData=${withValidData}, rentEstimated=${withEstimatedRent}, qualified=${qualifying.length}`);
 
   // Market summary
@@ -136,6 +141,7 @@ export async function discoverProperties(zipCode: string, profile: InvestorProfi
     filterPercentage: totalListings > 0 ? Math.round(((totalListings - qualifyingCount) / totalListings) * 100) : 0,
     qualifying,
     nonQualifying,
+    boundary,
     marketSummary: {
       avgPrice: Math.round(avg(allPrices)),
       avgRent: Math.round(avg(allRents)),

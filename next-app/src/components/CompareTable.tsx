@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { EnrichedListing } from '@/lib/types';
 
-type SortKey = 'netYield' | 'price' | 'capRate' | 'leverageSpread' | 'monthlyCashFlow' | 'grossYield' | 'bedrooms' | 'squareFootage' | 'daysOnMarket';
+type SortKey = 'netYield' | 'price' | 'maxOfferPrice' | 'capRate' | 'leverageSpread' | 'monthlyCashFlow' | 'grossYield' | 'bedrooms' | 'squareFootage' | 'daysOnMarket';
 
 interface Props {
   listings: EnrichedListing[];
@@ -30,6 +30,7 @@ export default function CompareTable({ listings, onSelect, totalInZip, totalQual
 
   const sorted = [...listings].sort((a, b) => {
     const getVal = (l: EnrichedListing): number => {
+      if (sortKey === 'maxOfferPrice') return l.maxOfferPrice ?? 0;
       const yieldKeys: SortKey[] = ['netYield', 'capRate', 'leverageSpread', 'monthlyCashFlow', 'grossYield'];
       if (yieldKeys.includes(sortKey)) return (l.yield as unknown as Record<string, number>)[sortKey] ?? 0;
       return (l as unknown as Record<string, number>)[sortKey] ?? 0;
@@ -37,8 +38,43 @@ export default function CompareTable({ listings, onSelect, totalInZip, totalQual
     return sortDir === 'asc' ? getVal(a) - getVal(b) : getVal(b) - getVal(a);
   });
 
+  function exportCsv() {
+    const header = ['Address', 'City', 'Price', 'MaxOffer', 'DiscountPct', 'NetYield', 'CapRate', 'MonthlyCF', 'Beds', 'SqFt', 'DOM'];
+    const rows = listings.map(l => [
+      `"${l.formattedAddress}"`,
+      `"${l.city}"`,
+      Math.round(l.price),
+      l.maxOfferPrice != null ? Math.round(l.maxOfferPrice) : '',
+      l.discountFromAsk.toFixed(2),
+      l.yield.netYield.toFixed(2),
+      l.yield.capRate.toFixed(2),
+      Math.round(l.yield.monthlyCashFlow),
+      l.bedrooms,
+      l.squareFootage,
+      l.daysOnMarket ?? '',
+    ]);
+    const csv = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `yieldmap-${zipCode}-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const cols: Array<{ key: SortKey; label: string; render: (l: EnrichedListing) => React.ReactNode }> = [
     { key: 'price', label: 'Price', render: l => fmt(l.price) },
+    { key: 'maxOfferPrice', label: 'Max Offer', render: l => {
+      if (!l.maxOfferPrice) return <span className="text-[#8A94A6]">—</span>;
+      const color = l.discountFromAsk <= 0 ? '#22C55E' : l.discountFromAsk <= 10 ? '#F59E0B' : l.discountFromAsk <= 20 ? '#F97316' : '#EF4444';
+      return (
+        <div>
+          <div>${Math.round(l.maxOfferPrice).toLocaleString()}</div>
+          <div style={{ fontSize: 11, color }}>{l.discountFromAsk <= 0 ? '✓ at ask' : `-${l.discountFromAsk.toFixed(1)}%`}</div>
+        </div>
+      );
+    }},
     { key: 'netYield', label: 'Net Yield', render: l => <span style={{ color: l.yieldColor }}>{fmtPct(l.yield.netYield)}</span> },
     { key: 'capRate', label: 'Cap Rate', render: l => fmtPct(l.yield.capRate) },
     { key: 'leverageSpread', label: 'Spread', render: l => <span className={l.yield.leverageSpread >= 0 ? 'text-[#22C55E]' : 'text-[#EF4444]'}>{l.yield.leverageSpread >= 0 ? '+' : ''}{fmtPct(l.yield.leverageSpread)}</span> },
@@ -53,9 +89,17 @@ export default function CompareTable({ listings, onSelect, totalInZip, totalQual
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
-      <div className="px-4 py-3 border-b border-white/7 text-sm text-[#8A94A6]">
-        <span className="text-[#22C55E] font-semibold">{totalQualifying} qualifying</span>
-        {' '}from {totalInZip.toLocaleString()} listings in {zipCode} ({filterPct}% filtered)
+      <div className="px-4 py-3 border-b border-white/7 text-sm text-[#8A94A6] flex items-center justify-between">
+        <span>
+          <span className="text-[#22C55E] font-semibold">{totalQualifying} qualifying</span>
+          {' '}from {totalInZip.toLocaleString()} listings in {zipCode} ({filterPct}% filtered)
+        </span>
+        <button
+          onClick={exportCsv}
+          className="text-[10px] font-semibold px-2.5 py-1 rounded bg-white/5 text-[#8A94A6] hover:text-[#EEF0F4] hover:bg-white/10 transition-colors whitespace-nowrap"
+        >
+          Export CSV
+        </button>
       </div>
       <div className="overflow-auto flex-1">
         <table className="w-full text-xs text-left border-collapse">

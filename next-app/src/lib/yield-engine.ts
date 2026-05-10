@@ -129,14 +129,53 @@ export function getYieldLabel(netYield: number): string {
   return 'Marginal';
 }
 
+export function calcMaxOfferPrice(listing: RentCastListing, profile: InvestorProfile): number | null {
+  if (!listing.estimatedRent || listing.estimatedRent <= 0 || !listing.price || listing.price <= 0) return null;
+  if (qualifiesForInvestment(listing, profile)) return listing.price;
+
+  let low = 1000;
+  let high = listing.price;
+  let maxQualifyingPrice: number | null = null;
+
+  for (let i = 0; i < 30; i++) {
+    const mid = Math.floor((low + high) / 2);
+    const testListing = { ...listing, price: mid };
+    if (qualifiesForInvestment(testListing, profile)) {
+      maxQualifyingPrice = mid;
+      low = mid + 1;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  if (maxQualifyingPrice === null) return null;
+  return Math.floor(maxQualifyingPrice / 1000) * 1000;
+}
+
+export function calcDiscountFromAsk(askPrice: number, maxOfferPrice: number): number {
+  if (maxOfferPrice >= askPrice) return 0;
+  return ((askPrice - maxOfferPrice) / askPrice) * 100;
+}
+
 export function enrichListing(listing: RentCastListing, profile: InvestorProfile): EnrichedListing {
   const yieldResult = calcYield(listing, profile);
   const qualifies = qualifiesForInvestment(listing, profile);
+  const maxOfferPrice = calcMaxOfferPrice(listing, profile);
+  const discountFromAsk = maxOfferPrice !== null ? calcDiscountFromAsk(listing.price, maxOfferPrice) : 100;
+  const negotiability: EnrichedListing['negotiability'] =
+    discountFromAsk <= 0 ? 'easy' :
+    discountFromAsk <= 5 ? 'easy' :
+    discountFromAsk <= 10 ? 'moderate' :
+    discountFromAsk <= 20 ? 'hard' : 'unrealistic';
+
   return {
     ...listing,
     yield: yieldResult,
     qualifies,
     yieldColor: getYieldColor(yieldResult.netYield),
     yieldLabel: getYieldLabel(yieldResult.netYield),
+    maxOfferPrice,
+    discountFromAsk,
+    negotiability,
   };
 }

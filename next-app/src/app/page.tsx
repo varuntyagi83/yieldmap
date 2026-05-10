@@ -12,6 +12,7 @@ import FilterImpactBanner from '@/components/FilterImpactBanner';
 import InvestorProfilePopover from '@/components/InvestorProfilePopover';
 import PropertyDetailPanel from '@/components/PropertyDetailPanel';
 import CompareTable from '@/components/CompareTable';
+import BoundaryPropertiesSection from '@/components/BoundaryPropertiesSection';
 
 interface TabProps {
   listings: EnrichedListing[];
@@ -249,35 +250,55 @@ export default function HomePage() {
 
           {/* Map view */}
           {reEnrichedResult && !loading && activeTab === 'map' && (
-            <>
-              <div className="flex-1">
-                <MapView
-                  qualifying={displayed}
-                  nonQualifying={showAll ? reEnrichedResult.nonQualifying : []}
-                  showAll={showAll}
-                  onSelect={setSelected}
-                  selectedId={selected?.id}
-                  centerLat={centerLat}
-                  centerLng={centerLng}
-                />
-              </div>
-              <div className="absolute bottom-4 left-4 z-10">
-                <button onClick={() => setShowAll(v => !v)}
-                  className="flex items-center gap-2 px-3 py-2 bg-[#111820] border border-white/10 rounded-lg text-xs font-medium text-[#8A94A6] hover:border-white/20 hover:text-[#EEF0F4] transition-colors">
-                  <span className={`w-3 h-3 rounded-full border ${showAll ? 'bg-[#22C55E] border-[#22C55E]' : 'border-[#8A94A6]'}`} />
-                  Show all listings
-                </button>
-              </div>
-              {displayed.length > 0 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
-                  <div className="px-4 py-2 bg-[#111820]/90 border border-white/10 rounded-full text-xs text-[#8A94A6] backdrop-blur-sm whitespace-nowrap">
-                    Showing {displayed.length} qualifying
-                    {` · avg yield ${(displayed.reduce((sum, l) => sum + l.yield.netYield, 0) / displayed.length).toFixed(1)}%`}
-                    {` · best ${Math.max(...displayed.map(l => l.yield.netYield)).toFixed(1)}%`}
+            <div className="flex flex-col flex-1 overflow-hidden">
+              {/* Map row */}
+              <div className="flex flex-1 relative overflow-hidden">
+                <div className="flex-1">
+                  <MapView
+                    qualifying={displayed}
+                    nonQualifying={showAll ? reEnrichedResult.nonQualifying : []}
+                    showAll={showAll}
+                    onSelect={setSelected}
+                    selectedId={selected?.id}
+                    centerLat={centerLat}
+                    centerLng={centerLng}
+                  />
+                </div>
+                <div className="absolute bottom-4 left-4 z-10">
+                  <button onClick={() => setShowAll(v => !v)}
+                    className="flex items-center gap-2 px-3 py-2 bg-[#111820] border border-white/10 rounded-lg text-xs font-medium text-[#8A94A6] hover:border-white/20 hover:text-[#EEF0F4] transition-colors">
+                    <span className={`w-3 h-3 rounded-full border ${showAll ? 'bg-[#22C55E] border-[#22C55E]' : 'border-[#8A94A6]'}`} />
+                    Show all listings
+                  </button>
+                </div>
+                {displayed.length > 0 && (
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+                    <div className="px-4 py-2 bg-[#111820]/90 border border-white/10 rounded-full text-xs text-[#8A94A6] backdrop-blur-sm whitespace-nowrap">
+                      Showing {displayed.length} qualifying
+                      {` · avg yield ${(displayed.reduce((sum, l) => sum + l.yield.netYield, 0) / displayed.length).toFixed(1)}%`}
+                      {` · best ${Math.max(...displayed.map(l => l.yield.netYield)).toFixed(1)}%`}
+                    </div>
                   </div>
+                )}
+                {/* Detail panel */}
+                {selected && (
+                  <PropertyDetailPanel
+                    listing={selected}
+                    onClose={() => setSelected(null)}
+                  />
+                )}
+              </div>
+              {/* Boundary properties below map */}
+              {reEnrichedResult.boundary.length > 0 && (
+                <div className="overflow-y-auto flex-shrink-0 max-h-[40vh]" style={{ background: s.bg }}>
+                  <BoundaryPropertiesSection
+                    boundary={reEnrichedResult.boundary}
+                    onSelect={setSelected}
+                    s={s}
+                  />
                 </div>
               )}
-            </>
+            </div>
           )}
 
           {/* Compare view */}
@@ -309,13 +330,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Detail panel — inside the inner content so it never reserves width when closed */}
-          {selected && activeTab === 'map' && (
-            <PropertyDetailPanel
-              listing={selected}
-              onClose={() => setSelected(null)}
-            />
-          )}
         </div>
       </div>
 

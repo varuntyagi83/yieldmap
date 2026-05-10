@@ -34,6 +34,15 @@ export default function FilterImpactBanner({ result }: Props) {
         {marketSummary.avgRent > 0 && ` · Avg rent $${marketSummary.avgRent.toLocaleString()}/mo`}
         {marketSummary.avgDaysOnMarket > 0 && ` · ${marketSummary.avgDaysOnMarket}d avg DOM`}
       </div>
+      {result.boundary.length > 0 && (
+        <div className="text-[#F59E0B]/70 text-[10px] mt-0.5 flex items-center gap-1">
+          + {result.boundary.length} negotiable (within 10% of qualifying)
+          <span
+            title="Properties that don't qualify at ask but would with a 1-10% price reduction"
+            className="cursor-help text-[#8A94A6] hover:text-[#EEF0F4]"
+          >(?)</span>
+        </div>
+      )}
     </div>
   );
 }

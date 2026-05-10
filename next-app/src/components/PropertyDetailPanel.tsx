@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { EnrichedListing } from '@/lib/types';
 
 interface Props {
@@ -32,6 +33,7 @@ function BreakdownRow({ label, value, bold, separator }: { label: string; value:
 }
 
 export default function PropertyDetailPanel({ listing, onClose }: Props) {
+  const [copied, setCopied] = useState(false);
   const y = listing.yield;
   const dom = listing.daysOnMarket ?? 0;
   const domColor = dom < 21 ? 'text-[#22C55E]' : dom < 60 ? 'text-[#F59E0B]' : 'text-[#EF4444]';
@@ -60,7 +62,12 @@ export default function PropertyDetailPanel({ listing, onClose }: Props) {
       <div className="p-4 flex flex-col gap-4">
         {/* Price + DOM */}
         <div className="flex items-end justify-between">
-          <div className="text-3xl font-black text-[#EEF0F4]">{fmt(listing.price)}</div>
+          <div>
+            <div className="text-3xl font-black text-[#EEF0F4]">{fmt(listing.price)}</div>
+            {listing.discountFromAsk === 0 && (
+              <div className="text-[10px] text-[#22C55E] mt-0.5">✓ Qualifies at ask price — no negotiation needed</div>
+            )}
+          </div>
           {dom > 0 && (
             <span className={`text-xs font-semibold px-2.5 py-1 rounded-full bg-white/5 ${domColor}`}>
               {dom}d on market
@@ -110,6 +117,45 @@ export default function PropertyDetailPanel({ listing, onClose }: Props) {
             {y.leverageSignal === 'negative' && `✗ ${fmtPct(y.leverageSpread)} spread — ${fmt(y.monthlyDeficit)}/mo deficit${y.yearsToBreakeven ? ` · breakeven ~${y.yearsToBreakeven}yr · ${fmt(y.totalOutOfPocket)} out of pocket` : ' · no breakeven in 30yr'}`}
           </div>
         </div>
+
+        {/* Max offer price */}
+        {listing.maxOfferPrice != null && listing.discountFromAsk > 0 && (
+          <div className="bg-[#0B0F14] rounded-lg p-3">
+            <div className="text-[10px] text-[#8A94A6] uppercase tracking-wider mb-2">⚡ Max Offer Price</div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="text-xl font-bold text-[#22C55E]">${Math.round(listing.maxOfferPrice).toLocaleString()}</div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(String(Math.round(listing.maxOfferPrice!)));
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                }}
+                className="text-[10px] px-2 py-0.5 rounded bg-white/5 text-[#8A94A6] hover:text-[#EEF0F4] hover:bg-white/10 transition-colors"
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            <div className="text-[11px] text-[#8A94A6] mb-1.5">
+              {listing.discountFromAsk.toFixed(1)}% below ask of ${listing.price.toLocaleString()}
+            </div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                listing.negotiability === 'easy' ? 'bg-[#22C55E]/15 text-[#22C55E]' :
+                listing.negotiability === 'moderate' ? 'bg-[#F59E0B]/15 text-[#F59E0B]' :
+                listing.negotiability === 'hard' ? 'bg-[#F97316]/15 text-[#F97316]' :
+                'bg-[#EF4444]/15 text-[#EF4444]'
+              }`}>
+                {listing.negotiability === 'easy' ? 'Easy' :
+                 listing.negotiability === 'moderate' ? 'Moderate' :
+                 listing.negotiability === 'hard' ? 'Hard' : 'Unrealistic'}
+              </span>
+            </div>
+            <div className="text-[10px] text-[#8A94A6]">At this price the property qualifies for investment</div>
+            {dom > 60 && (
+              <div className="text-[10px] text-[#F59E0B] mt-1">Listed {dom} days — seller may be motivated</div>
+            )}
+          </div>
+        )}
 
         {/* Monthly breakdown */}
         <div className="bg-[#0B0F14] rounded-lg p-3">
